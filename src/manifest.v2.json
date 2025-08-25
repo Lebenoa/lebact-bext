@@ -1,0 +1,29 @@
+{
+    "manifest_version": 2,
+    "name": "Web Music Player Discord Presence",
+    "version": "1.0",
+    "description": "Set your discord status to `Listening to...` when using Web Music Player",
+    "permissions": [
+        "scripting",
+        "tabs"
+    ],
+    "background": {
+        "scripts": [
+            "background.js"
+        ]
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://music.lebenoa.com/*",
+                "http://127.0.0.1:1809/*"
+            ],
+            "js": [
+                "content.js"
+            ]
+        }
+    ],
+    "browser_action": {
+        "default_title": "WMP Presence"
+    }
+}

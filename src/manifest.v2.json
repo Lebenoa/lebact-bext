@@ -1,29 +1,32 @@
 {
     "manifest_version": 2,
-    "name": "Web Music Player Discord Presence",
+    "name": "Lebact",
+    "description": "Show what you're doing to others!",
     "version": "1.0",
-    "description": "Set your discord status to `Listening to...` when using Web Music Player",
     "permissions": [
-        "scripting",
         "tabs"
     ],
-    "background": {
-        "scripts": [
-            "background.js"
-        ]
-    },
     "content_scripts": [
         {
             "matches": [
-                "https://music.lebenoa.com/*",
-                "http://127.0.0.1:1809/*"
+                "https://www.youtube.com/*"
             ],
             "js": [
-                "content.js"
+                "youtube.js"
             ]
         }
     ],
     "browser_action": {
-        "default_title": "WMP Presence"
+        "default_title": "Lebact"
+    },
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "@lebact-data-collection-perms",
+            "data_collection_permissions": {
+                "required": [
+                    "none"
+                ]
+            }
+        }
     }
 }

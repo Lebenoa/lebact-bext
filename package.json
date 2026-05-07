@@ -1,6 +1,6 @@
 {
     "private": true,
-    "name": "enoact-v2",
+    "name": "enoact-browser-extension",
     "description": "Show what you're doing to others from your browser!",
     "version": "2.0.0",
     "license": "Apache-2.0",
@@ -15,7 +15,7 @@
     },
     "devDependencies": {
         "@tsconfig/svelte": "5.0.8",
-        "extension": "^3.14.5",
+        "extension": "^3.15.1",
         "typescript": "6.0.3",
         "unocss": "^66.6.8"
     },

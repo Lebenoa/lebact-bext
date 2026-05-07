@@ -62,6 +62,7 @@ export default function initYouTube() {
                 }
 
                 const info = getVideoInfo();
+                console.log(info);
                 const now = Date.now();
                 const body =
                     JSON.stringify({
@@ -136,8 +137,6 @@ export default function initYouTube() {
         return false;
     }
 
-
-
     function getChannelInfo(): ChannelInfo {
         let channelElem =
             document.querySelector('div#text-container.ytd-channel-name a[href]') as HTMLAnchorElement | null;
@@ -157,37 +156,35 @@ export default function initYouTube() {
         channelElem = document.querySelector("div[id='upload-info'] yt-attributed-string[id='attributed-channel-name'] a") as HTMLAnchorElement | null;
         if (channelElem) {
             if (config?.robust_info) {
-                if (!cached.channel || !cached.channel_thumbnail) {
-                    channelElem.click();
+                if (cached.channel && cached.channel_thumbnail) {
+                    return {
+                        channel: cached.channel,
+                        channel_thumbnail: cached.channel_thumbnail,
+                    };
                 }
 
+                channelElem.click();
                 const listItems = document.querySelectorAll("ytd-popup-container yt-list-item-view-model");
-                if (!cached.channel) {
-                    for (let i = 0; i < listItems.length; i++) {
-                        const item = listItems[i];
-                        const channelName = item.querySelector("a[class~='ytAttributedStringLink'][href]") as HTMLAnchorElement | null;
-                        if (channelName) {
-                            switch (i) {
-                                case 0:
-                                    cached.channel = channelName.innerText;
-                                    break;
-                                case listItems.length - 1:
-                                    cached.channel += " and " + channelName.innerText;
-                                    break;
-                                default:
-                                    cached.channel += ", " + channelName.innerText;
-                                    break;
-                            }
-                        }
-                    }
-                }
-
-                if (!cached.channel_thumbnail) {
-                    const firstItem = listItems.item(0);
-                    if (firstItem) {
-                        const channel_img = firstItem.querySelector("avatar-view-model img") as HTMLImageElement | null;
-                        if (channel_img) {
-                            cached.channel_thumbnail = channel_img.src;
+                for (let i = 0; i < listItems.length; i++) {
+                    const item = listItems[i];
+                    const channelName = item.querySelector("a[class~='ytAttributedStringLink'][href]") as HTMLAnchorElement | null;
+                    if (channelName) {
+                        switch (i) {
+                            case 0:
+                                cached.channel = channelName.innerText;
+                                if (!cached.channel_thumbnail) {
+                                    const channel_img = item.querySelector("avatar-view-model img") as HTMLImageElement | null;
+                                    if (channel_img) {
+                                        cached.channel_thumbnail = channel_img.src;
+                                    }
+                                }
+                                break;
+                            case listItems.length - 1:
+                                cached.channel += " and " + channelName.innerText;
+                                break;
+                            default:
+                                cached.channel += ", " + channelName.innerText;
+                                break;
                         }
                     }
                 }
@@ -226,11 +223,18 @@ export default function initYouTube() {
         const thumbnail = getThumbnail(id);
 
 
-        let channelInfo = getChannelInfo();
-
         const duration = video?.duration || 0;
         const current_time = video?.currentTime || 0;
         const isLive = getIsLiveStreaming();
+
+        let channelInfo: ChannelInfo | undefined = undefined;
+        if (config.channel_info) {
+            channelInfo = getChannelInfo();
+        } else {
+            // Show playing state when channel_info is disabled
+            const playingState = video?.paused ? "Paused" : "Playing";
+            channelInfo = { channel: playingState };
+        }
 
         return {
             title,

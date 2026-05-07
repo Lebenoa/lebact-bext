@@ -4,12 +4,13 @@ const isFirefoxLike =
 
 const SETTINGS_KEY = 'enoact_settings'
 
-const defaultSettings = {
+const defaultSettings: Settings = {
     "www.youtube.com": {
         script: "./scripts/youtube.js",
         config: {
             enabled: true,
-            robust_info: true,
+            channel_info: true,
+            robust_info: false,
         },
     },
     "music.youtube.com": {
@@ -20,10 +21,7 @@ const defaultSettings = {
     },
 }
 
-type Settings = Record<string, { config: Record<string, any> }>;
-
 let storage: typeof browser.storage | typeof chrome.storage;
-let injectedTabId = new Set();
 
 if (isFirefoxLike) {
     storage = browser.storage;
@@ -39,11 +37,29 @@ if (isFirefoxLike) {
 }
 
 
+// Deep merge settings with defaults
+function mergeWithDefaults(saved: Partial<typeof defaultSettings>): typeof defaultSettings {
+    const merged = { ...defaultSettings }
+    for (const [site, siteSettings] of Object.entries(saved)) {
+        if (site in defaultSettings) {
+            merged[site as keyof typeof defaultSettings] = {
+                ...defaultSettings[site as keyof typeof defaultSettings],
+                ...(siteSettings || {}),
+                config: {
+                    ...defaultSettings[site as keyof typeof defaultSettings].config,
+                    ...(siteSettings?.config || {}),
+                },
+            }
+        }
+    }
+    return merged
+}
+
 // Get settings from storage
 async function getSettings(): Promise<typeof defaultSettings> {
     try {
         const extStorage = await storage.sync.get(SETTINGS_KEY)
-        return extStorage[SETTINGS_KEY] ? { ...defaultSettings, ...extStorage[SETTINGS_KEY] } : defaultSettings
+        return extStorage[SETTINGS_KEY] ? mergeWithDefaults(extStorage[SETTINGS_KEY]) : defaultSettings
     } catch (error) {
         console.error('Failed to get settings:', error)
         return defaultSettings
@@ -55,13 +71,13 @@ getSettings().then((settings) => {
 })
 
 // Save settings to storage (only saves config)
-async function saveSettings(settings: Partial<Settings>): Promise<void> {
+async function saveSettings(settings: Partial<SaveSettings>): Promise<void> {
     try {
         const current = await getSettings()
         const updated = { ...current, ...settings }
         console.log({ updated });
         // Only save config properties for each site
-        const configOnly: Settings = {}
+        const configOnly: SaveSettings = {}
         for (const [site, siteSettings] of Object.entries(updated)) {
             const { config } = siteSettings ? siteSettings : defaultSettings[site as keyof typeof defaultSettings];
             configOnly[site as keyof Settings] = {
@@ -78,11 +94,10 @@ async function saveSettings(settings: Partial<Settings>): Promise<void> {
 chrome.webNavigation.onCommitted.addListener(async (details) => {
     const settings = await getSettings();
     const url = new URL(details.url);
-    const siteSetting = defaultSettings[url.host as keyof typeof defaultSettings];
+    const siteSetting = settings[url.host as keyof typeof defaultSettings];
     if (!siteSetting || !siteSetting.script) return
 
-    const userSettings = await getSettings();
-    const isContentEnabled: boolean = userSettings[url.host as keyof typeof userSettings]?.config?.enabled ?? false;
+    const isContentEnabled: boolean = settings[url.host as keyof typeof settings]?.config?.enabled ?? false;
     if (!isContentEnabled) return
 
     await chrome.scripting.executeScript({
@@ -122,12 +137,12 @@ chrome.runtime.onConnect.addListener((port) => {
                     if (!message.site) return
                     const settings = await getSettings();
                     const siteSettings = settings[message.site as keyof typeof defaultSettings]
-                    port.postMessage({ type: "GET_SETTINGS", settings: siteSettings ? siteSettings.config : defaultSettings[message.site as keyof typeof defaultSettings].config })
+                    port.postMessage({ type: "GET_SETTINGS", settings: siteSettings.config })
                     break;
                 case 'UPDATE_SETTINGS':
                     if (!message.name || !message.settings) return
                     try {
-                        await saveSettings({ [message.name]: { config: message.settings } });
+                        await saveSettings({ [message.name]: { config: message.settings as Config } });
                         port.postMessage({ type: "SUCCESS", message: "Settings updated successfully" })
                     } catch (err) {
                         port.postMessage({ type: "ERROR", message: "Failed to save settings" })

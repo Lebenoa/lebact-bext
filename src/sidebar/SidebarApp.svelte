@@ -1,13 +1,27 @@
 <script lang="ts">
+    type SettingsInfo = {
+        [x: string]: {
+            rename?: string;
+            description?: string;
+            type?: "boolean" | "string";
+            dependsOn?: string;
+        };
+    };
+
     import Checkbox from "./Checkbox.svelte";
 
     import iconUrl from "../images/icon.png";
     import { fade } from "svelte/transition";
     const logo = iconUrl;
-    const SETTINGS_INFO = {
+    const SETTINGS_INFO: SettingsInfo = {
         enabled: {
             rename: "Enabled",
             description: "Disable/enable the extension on this site",
+            type: "boolean",
+        },
+        channel_info: {
+            rename: "Channel Info",
+            description: "Display channel icon on the small image",
             type: "boolean",
         },
         robust_info: {
@@ -15,9 +29,14 @@
             description:
                 "Extract more information from collaboration video but may flicker screen a little bit",
             type: "boolean",
+            dependsOn: "channel_info",
         },
     };
-    const port = chrome.runtime.connect({ name: "sidebar" });
+    let port = chrome.runtime.connect({ name: "sidebar" });
+    port.onDisconnect.addListener(() => {
+        console.log("Port disconnected, reconnecting...");
+        port = chrome.runtime.connect({ name: "sidebar" });
+    });
 
     let currentTab = $state("");
     let sitesAvailable: { name: string; enabled: boolean }[] = $state([]);
@@ -105,7 +124,7 @@
             </div>
         {:else}
             <button
-                class="hover:underline px-4 py-2 absolute top-10 left-2 transition-all duration-300 cursor-pointer text-xl font-bold"
+                class="hover:underline px-4 py-2 absolute top-2 left-2 transition-all duration-300 cursor-pointer text-xl font-bold"
                 onclick={() => {
                     (currentTab = ""), (settings = {});
                 }}
@@ -124,64 +143,71 @@
                                 SETTINGS_INFO[
                                     key as keyof typeof SETTINGS_INFO
                                 ]}
-                            <label class="flex flex-col w-full">
-                                <span class="font-bold text-lg"
-                                    >{info?.rename ?? key}</span
+                            {#if !info?.dependsOn || settings[info?.dependsOn]}
+                                <label
+                                    class="flex flex-col w-full"
+                                    transition:fade
                                 >
-                                {#if info?.description}
-                                    <span>{info.description}</span>
-                                {/if}
-                                {#if info?.type == "boolean"}
-                                    <Checkbox
-                                        label={value.toString()}
-                                        bind:checked={
-                                            settings[
-                                                key as keyof typeof settings
-                                            ]
-                                        }
-                                    />
-                                {:else}
-                                    <input
-                                        class="px-4 py-2 border border-gray-300"
-                                        type="text"
-                                        {value}
-                                        onchange={(e) => {
-                                            const originalValueType =
-                                                typeof value;
-                                            switch (originalValueType) {
-                                                case "boolean":
-                                                    if (
-                                                        e.currentTarget.value ==
-                                                        "true"
-                                                    ) {
-                                                        settings[
-                                                            key as keyof typeof settings
-                                                        ] = true;
-                                                    } else {
-                                                        settings[
-                                                            key as keyof typeof settings
-                                                        ] = false;
-                                                    }
-                                                    break;
-                                                case "string":
-                                                    settings[
-                                                        key as keyof typeof settings
-                                                    ] = e.currentTarget.value;
-                                                    break;
-                                                case "number":
-                                                    settings[
-                                                        key as keyof typeof settings
-                                                    ] = Number(
-                                                        e.currentTarget.value,
-                                                    );
-                                                    break;
-                                                default:
-                                                    break;
+                                    <span class="font-bold text-lg"
+                                        >{info?.rename ?? key}</span
+                                    >
+                                    {#if info?.description}
+                                        <span>{info.description}</span>
+                                    {/if}
+                                    {#if info?.type == "boolean"}
+                                        <Checkbox
+                                            label={value.toString()}
+                                            bind:checked={
+                                                settings[
+                                                    key as keyof typeof settings
+                                                ]
                                             }
-                                        }}
-                                    />
-                                {/if}
-                            </label>
+                                        />
+                                    {:else}
+                                        <input
+                                            class="px-4 py-2 border border-gray-300"
+                                            type="text"
+                                            {value}
+                                            onchange={(e) => {
+                                                const originalValueType =
+                                                    typeof value;
+                                                switch (originalValueType) {
+                                                    case "boolean":
+                                                        if (
+                                                            e.currentTarget
+                                                                .value == "true"
+                                                        ) {
+                                                            settings[
+                                                                key as keyof typeof settings
+                                                            ] = true;
+                                                        } else {
+                                                            settings[
+                                                                key as keyof typeof settings
+                                                            ] = false;
+                                                        }
+                                                        break;
+                                                    case "string":
+                                                        settings[
+                                                            key as keyof typeof settings
+                                                        ] =
+                                                            e.currentTarget.value;
+                                                        break;
+                                                    case "number":
+                                                        settings[
+                                                            key as keyof typeof settings
+                                                        ] = Number(
+                                                            e.currentTarget
+                                                                .value,
+                                                        );
+                                                        break;
+                                                    default:
+                                                        break;
+                                                }
+                                            }}
+                                        />
+                                    {/if}
+                                </label>
+                            {/if}
                         {/each}
                         <button
                             class="px-4 py-2 bg-green text-black cursor-pointer text-xl"

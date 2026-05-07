@@ -3,8 +3,8 @@
     "chromium:manifest_version": 3,
     "firefox:manifest_version": 2,
     "version": "1.0.0",
-    "name": "enoact-v2",
-    "description": "Svelte-based extension with a sidebar panel. Adds a sidebar with a simple page.",
+    "name": "Enoact",
+    "description": "Show what you're doing to others from your browser!",
     "icons": {
         "16": "images/icon.png",
         "32": "images/icon.png",
@@ -37,7 +37,13 @@
         "default_title": "Enoact Settings"
     },
     "firefox:sidebar_action": {
-        "default_icon": "images/icon.png",
+        "default_icon": {
+            "16": "images/icon.png",
+            "32": "images/icon.png",
+            "48": "images/icon.png",
+            "64": "images/icon.png",
+            "128": "images/icon.png"
+        },
         "default_panel": "sidebar/index.html",
         "default_title": "Enoact Settings"
     },
@@ -60,7 +66,7 @@
             "background.ts"
         ]
     },
-    "chrome:host_permissions": [
+    "chromium:host_permissions": [
         "*://www.youtube.com/*",
         "*://music.youtube.com/*"
     ],

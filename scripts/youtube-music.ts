@@ -32,10 +32,6 @@ export default function initYouTubeMusic() {
             }
             attemptReconnect();
         })
-        websocketConnection.addEventListener("message", (evt) => {
-            // Debug message
-            console.log(evt.data)
-        });
         websocketConnection.addEventListener("open", () => {
             reconnectAttempts = 0;
             updateInterval = setInterval(() => {
